@@ -372,21 +372,21 @@ func (p *Parser) parseIfExpression() ast.Expression {
 }
 
 func (p *Parser) parseFunctionLiteral() ast.Expression {
-	fl := &ast.FunctionLiteral{Token: p.curToken}
+	lit := &ast.FunctionLiteral{Token: p.curToken}
 
 	if !p.expectPeek(token.LPAREN) {
 		return nil
 	}
 
-	fl.Parameters = p.parseFunctionParameters()
+	lit.Parameters = p.parseFunctionParameters()
 
 	if !p.expectPeek(token.LBRACE) {
 		return nil
 	}
 
-	fl.Body = p.parseBlockStatement()
+	lit.Body = p.parseBlockStatement()
 
-	return fl
+	return lit
 }
 
 func (p *Parser) parseFunctionParameters() []*ast.Identifier {
