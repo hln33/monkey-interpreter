@@ -111,6 +111,7 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerPrefixFn(token.MINUS, p.parsePrefixExpression)
 	p.registerPrefixFn(token.TRUE, p.parseBoolean)
 	p.registerPrefixFn(token.FALSE, p.parseBoolean)
+	p.registerPrefixFn(token.LPAREN, p.parseGroupedExpression)
 
 	p.infixParseFns = make(map[token.TokenType]infixParseFn)
 	p.registerInfixFn(token.PLUS, p.parseInfixExpression)
@@ -230,13 +231,7 @@ func (p *Parser) parseExpression(precedence int) ast.Expression {
 	}
 	leftExpr := prefix()
 
-	// fmt.Print(precedence)
-	// fmt.Print("-")
-	// fmt.Print(p.peekPrecedence())
-	// fmt.Print("-")
-	// fmt.Print(p.peekToken.Type)
 	for !p.peekTokenIs(token.SEMICOLON) && precedence < p.peekPrecedence() {
-		// fmt.Println(p.peekToken.Type)
 		infix := p.infixParseFns[p.peekToken.Type]
 		if infix == nil {
 			return leftExpr
@@ -248,6 +243,40 @@ func (p *Parser) parseExpression(precedence int) ast.Expression {
 	}
 
 	return leftExpr
+}
+
+func (p *Parser) parseInfixExpression(left ast.Expression) ast.Expression {
+	if TRACE_MODE {
+		defer untrace(trace("parseInfixExpression"))
+	}
+
+	expr := &ast.InfixExpression{
+		Token:    p.curToken,
+		Operator: p.curToken.Literal,
+		Left:     left,
+	}
+
+	precedence := p.curPrecedence()
+	p.nextToken()
+	expr.Right = p.parseExpression(precedence)
+
+	return expr
+}
+
+func (p *Parser) parsePrefixExpression() ast.Expression {
+	if TRACE_MODE {
+		defer untrace(trace("parsePrefixExpression"))
+	}
+
+	expr := &ast.PrefixExpression{
+		Token:    p.curToken,
+		Operator: p.curToken.Literal,
+	}
+
+	p.nextToken()
+	expr.Right = p.parseExpression(PREFIX)
+
+	return expr
 }
 
 func (p *Parser) parseIdentifier() ast.Expression {
@@ -272,40 +301,17 @@ func (p *Parser) parseIntegerLiteral() ast.Expression {
 	return lit
 }
 
-func (p *Parser) parsePrefixExpression() ast.Expression {
-	if TRACE_MODE {
-		defer untrace(trace("parsePrefixExpression"))
-	}
-
-	expr := &ast.PrefixExpression{
-		Token:    p.curToken,
-		Operator: p.curToken.Literal,
-	}
-
-	p.nextToken()
-	expr.Right = p.parseExpression(PREFIX)
-
-	return expr
-}
-
 func (p *Parser) parseBoolean() ast.Expression {
 	return &ast.Boolean{Token: p.curToken, Value: p.curTokenIs(token.TRUE)}
 }
 
-func (p *Parser) parseInfixExpression(left ast.Expression) ast.Expression {
-	if TRACE_MODE {
-		defer untrace(trace("parseInfixExpression"))
-	}
-
-	expr := &ast.InfixExpression{
-		Token:    p.curToken,
-		Operator: p.curToken.Literal,
-		Left:     left,
-	}
-
-	precedence := p.curPrecedence()
+func (p *Parser) parseGroupedExpression() ast.Expression {
 	p.nextToken()
-	expr.Right = p.parseExpression(precedence)
+
+	expr := p.parseExpression(LOWEST)
+	if !p.expectPeek(token.RPAREN) {
+		return nil
+	}
 
 	return expr
 }

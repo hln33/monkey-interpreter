@@ -175,25 +175,6 @@ func TestIntegerLiteralExpression(t *testing.T) {
 	}
 }
 
-func testIntegerLiteral(t *testing.T, expr ast.Expression, expectedVal int64) bool {
-	il, ok := expr.(*ast.IntegerLiteral)
-	if !ok {
-		t.Errorf("expr not *ast.IntegerLiteral. got=%T", expr)
-		return false
-	}
-
-	if il.Value != expectedVal {
-		t.Errorf("il.Value not %d. got=%d", expectedVal, il.Value)
-	}
-
-	if il.TokenLiteral() != fmt.Sprintf("%d", expectedVal) {
-		t.Errorf("il.TokenLiteral() not %d. got=%s",
-			expectedVal, il.TokenLiteral())
-	}
-
-	return true
-}
-
 func TestBooleanExpression(t *testing.T) {
 	tests := []struct {
 		input        string
@@ -387,6 +368,26 @@ func TestOperatorPrecedence(t *testing.T) {
 			"3 < 5 == true",
 			"((3 < 5) == true)",
 		},
+		{
+			"1 + (2 + 3) + 4",
+			"((1 + (2 + 3)) + 4)",
+		},
+		{
+			"(5 + 5) * 2",
+			"((5 + 5) * 2)",
+		},
+		{
+			"2 / (5 + 5)",
+			"(2 / (5 + 5))",
+		},
+		{
+			"-(5 + 5)",
+			"(-(5 + 5))",
+		},
+		{
+			"!(true == true)",
+			"(!(true == true))",
+		},
 	}
 
 	for _, test := range tests {
@@ -413,6 +414,25 @@ func testIdentifier(t *testing.T, expr ast.Expression, expectedVal string) bool 
 		t.Errorf("ident.TokenLiteral() not %s. got=%s",
 			expectedVal, ident.TokenLiteral())
 		return false
+	}
+
+	return true
+}
+
+func testIntegerLiteral(t *testing.T, expr ast.Expression, expectedVal int64) bool {
+	il, ok := expr.(*ast.IntegerLiteral)
+	if !ok {
+		t.Errorf("expr not *ast.IntegerLiteral. got=%T", expr)
+		return false
+	}
+
+	if il.Value != expectedVal {
+		t.Errorf("il.Value not %d. got=%d", expectedVal, il.Value)
+	}
+
+	if il.TokenLiteral() != fmt.Sprintf("%d", expectedVal) {
+		t.Errorf("il.TokenLiteral() not %d. got=%s",
+			expectedVal, il.TokenLiteral())
 	}
 
 	return true
