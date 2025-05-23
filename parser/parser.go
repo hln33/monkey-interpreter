@@ -8,6 +8,8 @@ import (
 	"strconv"
 )
 
+const TRACE_MODE = false
+
 const (
 	_ int = iota
 	LOWEST
@@ -198,7 +200,9 @@ func (p *Parser) parseReturnStatement() *ast.ReturnStatement {
 }
 
 func (p *Parser) parseExpressionStatement() *ast.ExpressionStatement {
-	defer untrace(trace("parseExpressionStatement"))
+	if TRACE_MODE {
+		defer untrace(trace("parseExpressionStatement"))
+	}
 
 	stmt := &ast.ExpressionStatement{
 		Token:      p.curToken,
@@ -213,7 +217,9 @@ func (p *Parser) parseExpressionStatement() *ast.ExpressionStatement {
 }
 
 func (p *Parser) parseExpression(precedence int) ast.Expression {
-	defer untrace(trace("parseExpression"))
+	if TRACE_MODE {
+		defer untrace(trace("parseExpression"))
+	}
 
 	prefix := p.prefixParseFns[p.curToken.Type]
 	if prefix == nil {
@@ -247,7 +253,9 @@ func (p *Parser) parseIdentifier() ast.Expression {
 }
 
 func (p *Parser) parseIntegerLiteral() ast.Expression {
-	defer untrace(trace("parseIntegerLiteral"))
+	if TRACE_MODE {
+		defer untrace(trace("parseIntegerLiteral"))
+	}
 
 	lit := &ast.IntegerLiteral{Token: p.curToken}
 
@@ -263,7 +271,9 @@ func (p *Parser) parseIntegerLiteral() ast.Expression {
 }
 
 func (p *Parser) parsePrefixExpression() ast.Expression {
-	defer untrace(trace("parsePrefixExpression"))
+	if TRACE_MODE {
+		defer untrace(trace("parsePrefixExpression"))
+	}
 
 	expr := &ast.PrefixExpression{
 		Token:    p.curToken,
@@ -277,7 +287,9 @@ func (p *Parser) parsePrefixExpression() ast.Expression {
 }
 
 func (p *Parser) parseInfixExpression(left ast.Expression) ast.Expression {
-	defer untrace(trace("parseInfixExpression"))
+	if TRACE_MODE {
+		defer untrace(trace("parseInfixExpression"))
+	}
 
 	expr := &ast.InfixExpression{
 		Token:    p.curToken,
