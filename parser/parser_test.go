@@ -29,6 +29,12 @@ func parseProgram(t *testing.T, input string) *ast.Program {
 
 	return program
 }
+func testNumProgramStatements(t *testing.T, program *ast.Program, expected int) {
+	if len(program.Statements) != expected {
+		t.Fatalf("program.Statements does not contain %d statement(s). got=%d",
+			expected, len(program.Statements))
+	}
+}
 
 func TestLetStatements(t *testing.T) {
 	input := `
@@ -37,11 +43,7 @@ let y = 10;
 let foobar = 838383;	
 `
 	program := parseProgram(t, input)
-
-	if len(program.Statements) != 3 {
-		t.Fatalf("program.Statements does not contain 3 statements. got=%d",
-			len(program.Statements))
-	}
+	testNumProgramStatements(t, program, 3)
 
 	tests := []struct {
 		expectedIdentifier string
@@ -91,11 +93,7 @@ func TestReturnStatements(t *testing.T) {
 
 	for _, test := range tests {
 		program := parseProgram(t, test.input)
-
-		if len(program.Statements) != 1 {
-			t.Fatalf("program.Statements does not contain 1 statement. got=%d",
-				len(program.Statements))
-		}
+		testNumProgramStatements(t, program, 1)
 
 		stmt := program.Statements[0]
 		returnStmt, ok := stmt.(*ast.ReturnStatement)
@@ -115,11 +113,7 @@ func TestReturnStatements(t *testing.T) {
 func TestIdentifierExpression(t *testing.T) {
 	input := "foobar;"
 	program := parseProgram(t, input)
-
-	if len(program.Statements) != 1 {
-		t.Fatalf("program has not enough statements. got=%d",
-			len(program.Statements))
-	}
+	testNumProgramStatements(t, program, 1)
 
 	stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
 	if !ok {
@@ -143,11 +137,7 @@ func TestIdentifierExpression(t *testing.T) {
 func TestIntegerLiteralExpression(t *testing.T) {
 	input := "5;"
 	program := parseProgram(t, input)
-
-	if len(program.Statements) != 1 {
-		t.Fatalf("program has not enough statements. got=%d",
-			len(program.Statements))
-	}
+	testNumProgramStatements(t, program, 1)
 
 	stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
 	if !ok {
@@ -178,10 +168,7 @@ func TestBooleanExpressions(t *testing.T) {
 
 	for _, test := range tests {
 		program := parseProgram(t, test.input)
-
-		if len(program.Statements) != 1 {
-			t.Fatalf("program has not enough statements, got=%d", len(program.Statements))
-		}
+		testNumProgramStatements(t, program, 1)
 
 		stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
 		if !ok {
@@ -208,11 +195,7 @@ func TestPrefixExpressions(t *testing.T) {
 
 	for _, test := range tests {
 		program := parseProgram(t, test.input)
-
-		if len(program.Statements) != 1 {
-			t.Fatalf("program.Statements does not contain %d statements. got=%d",
-				1, len(program.Statements))
-		}
+		testNumProgramStatements(t, program, 1)
 
 		stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
 		if !ok {
@@ -256,11 +239,7 @@ func TestInfixExpressions(t *testing.T) {
 
 	for _, test := range tests {
 		program := parseProgram(t, test.input)
-
-		if len(program.Statements) != 1 {
-			t.Fatalf("program.Statements does not contain %d statements. got=%d",
-				1, len(program.Statements))
-		}
+		testNumProgramStatements(t, program, 1)
 
 		stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
 		if !ok {
@@ -277,11 +256,7 @@ func TestInfixExpressions(t *testing.T) {
 func TestIfExpression(t *testing.T) {
 	input := `if (x < y) { x }`
 	program := parseProgram(t, input)
-
-	if len(program.Statements) != 1 {
-		t.Fatalf("program.Statements does not contain %d statements. got=%d\n",
-			1, len(program.Statements))
-	}
+	testNumProgramStatements(t, program, 1)
 
 	stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
 	if !ok {
@@ -322,10 +297,7 @@ func TestIfExpression(t *testing.T) {
 func TestIfElseExpression(t *testing.T) {
 	input := `if (x < y) { x } else { y }`
 	program := parseProgram(t, input)
-
-	if len(program.Statements) != 1 {
-		t.Fatalf("program.Statements does not contain %d statements, got %d", 1, len(program.Statements))
-	}
+	testNumProgramStatements(t, program, 1)
 
 	stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
 	if !ok {
@@ -461,6 +433,18 @@ func TestOperatorPrecedence(t *testing.T) {
 			"!(true == true)",
 			"(!(true == true))",
 		},
+		{
+			"a + add(b * c) + d",
+			"((a + add((b * c))) + d)",
+		},
+		{
+			"add(a, b, 1, 2 * 3, 4 + 5, add(6, 7 * 8))",
+			"add(a, b, 1, (2 * 3), (4 + 5), add(6, (7 * 8)))",
+		},
+		{
+			"add(a + b + c * d / f + g)",
+			"add((((a + b) + ((c * d) / f)) + g))",
+		},
 	}
 
 	for _, test := range tests {
@@ -476,11 +460,7 @@ func TestOperatorPrecedence(t *testing.T) {
 func TestFunctionLiteral(t *testing.T) {
 	input := `fn(x, y) { x + y; }`
 	program := parseProgram(t, input)
-
-	if len(program.Statements) != 1 {
-		t.Fatalf("program.Body does not contain %d statements. got=%d\n",
-			1, len(program.Statements))
-	}
+	testNumProgramStatements(t, program, 1)
 
 	stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
 	if !ok {
@@ -538,6 +518,36 @@ func TestFunctionParameters(t *testing.T) {
 			testLiteralExpression(t, function.Parameters[i], ident)
 		}
 	}
+}
+
+func TestCallExpression(t *testing.T) {
+	input := "add(1, 2 * 3, 4 + 5);"
+	program := parseProgram(t, input)
+	testNumProgramStatements(t, program, 1)
+
+	stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
+	if !ok {
+		t.Fatalf("stmt is not ast.ExpressionStatement. got=%T",
+			program.Statements[0])
+	}
+
+	expr, ok := stmt.Expression.(*ast.CallExpression)
+	if !ok {
+		t.Fatalf("stmt.Expression is not ast.CallExpression. got=%T",
+			stmt.Expression)
+	}
+
+	if !testIdentifier(t, expr.Function, "add") {
+		return
+	}
+
+	if len(expr.Arguments) != 3 {
+		t.Fatalf("wrong length of arguments. got=%d", len(expr.Arguments))
+	}
+
+	testLiteralExpression(t, expr.Arguments[0], 1)
+	testInfixExpression(t, expr.Arguments[1], 2, "*", 3)
+	testInfixExpression(t, expr.Arguments[2], 4, "+", 5)
 }
 
 func testIdentifier(t *testing.T, expr ast.Expression, expectedVal string) bool {
