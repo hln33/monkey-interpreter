@@ -76,33 +76,39 @@ func testLetStatement(t *testing.T, s ast.Statement, expectedName string) bool {
 }
 
 func TestReturnStatements(t *testing.T) {
-	input := `
-return 5;
-return 10;
-return 993322;
-`
-
-	l := lexer.New(input)
-	p := New(l)
-
-	program := p.ParseProgram()
-	checkParserErrors(t, p)
-
-	if len(program.Statements) != 3 {
-		t.Fatalf("program.Statements does not contain 3 statements. got=%d",
-			len(program.Statements))
+	tests := []struct {
+		input         string
+		expectedValue interface{}
+	}{
+		{"return 5;", 5},
+		{"return 10;", 10},
+		{"return 993322;", 993322},
 	}
 
-	for _, stmt := range program.Statements {
+	for _, test := range tests {
+		l := lexer.New(test.input)
+		p := New(l)
+
+		program := p.ParseProgram()
+		checkParserErrors(t, p)
+
+		if len(program.Statements) != 1 {
+			t.Fatalf("program.Statements does not contain 1 statement. got=%d",
+				len(program.Statements))
+		}
+
+		stmt := program.Statements[0]
 		returnStmt, ok := stmt.(*ast.ReturnStatement)
 		if !ok {
-			t.Errorf("stmt no *ast.ReturnStatement. got=%T", stmt)
-			continue
+			t.Fatalf("stmt not *ast.ReturnStatement, got=%T", stmt)
 		}
 		if returnStmt.TokenLiteral() != "return" {
 			t.Errorf("returnStmt.TokenLiteral not 'return, got %q",
 				returnStmt.TokenLiteral())
 		}
+		// if testLiteralExpression(t, returnStmt.ReturnValue, test.expectedValue) {
+		// 	return
+		// }
 	}
 }
 
@@ -169,10 +175,10 @@ func TestIntegerLiteralExpression(t *testing.T) {
 	}
 }
 
-func testIntegerLiteral(t *testing.T, exp ast.Expression, expectedVal int64) bool {
-	il, ok := exp.(*ast.IntegerLiteral)
+func testIntegerLiteral(t *testing.T, expr ast.Expression, expectedVal int64) bool {
+	il, ok := expr.(*ast.IntegerLiteral)
 	if !ok {
-		t.Errorf("exp not *ast.IntegerLiteral. got=%T", exp)
+		t.Errorf("expr not *ast.IntegerLiteral. got=%T", expr)
 		return false
 	}
 
@@ -215,15 +221,15 @@ func TestPrefixExpressions(t *testing.T) {
 				program.Statements[0])
 		}
 
-		exp, ok := stmt.Expression.(*ast.PrefixExpression)
+		expr, ok := stmt.Expression.(*ast.PrefixExpression)
 		if !ok {
-			t.Fatalf("exp is not *ast.PrefixExpression. got=%T", stmt.Expression)
+			t.Fatalf("expr is not *ast.PrefixExpression. got=%T", stmt.Expression)
 		}
-		if exp.Operator != test.operator {
-			t.Fatalf("exp.Operator is not '%s'. got=%s",
-				test.operator, exp.Operator)
+		if expr.Operator != test.operator {
+			t.Fatalf("expr.Operator is not '%s'. got=%s",
+				test.operator, expr.Operator)
 		}
-		if !testIntegerLiteral(t, exp.Right, test.integerValue) {
+		if !testLiteralExpression(t, expr.Right, test.integerValue) {
 			return
 		}
 	}
@@ -263,19 +269,7 @@ func TestInfixExpressions(t *testing.T) {
 				program.Statements[0])
 		}
 
-		exp, ok := stmt.Expression.(*ast.InfixExpression)
-		if !ok {
-			t.Fatalf("exp is not *ast.InfixExpression. got=%T", stmt.Expression)
-		}
-
-		if !testIntegerLiteral(t, exp.Left, test.leftValue) {
-			return
-		}
-		if exp.Operator != test.operator {
-			t.Fatalf("exp.Operator is not '%s'. got=%s",
-				test.operator, exp.Operator)
-		}
-		if !testIntegerLiteral(t, exp.Right, test.rightValue) {
+		if !testInfixExpression(t, stmt.Expression, test.leftValue, test.operator, test.rightValue) {
 			return
 		}
 	}
@@ -355,4 +349,66 @@ func TestOperatorPrecedence(t *testing.T) {
 			t.Errorf("expected=%q, got=%q", test.expected, actual)
 		}
 	}
+}
+
+func testIdentifier(t *testing.T, expr ast.Expression, expectedVal string) bool {
+	ident, ok := expr.(*ast.Identifier)
+	if !ok {
+		t.Errorf("expr not *ast.Identifier. got=%T", expr)
+		return false
+	}
+
+	if ident.TokenLiteral() != expectedVal {
+		t.Errorf("ident.TokenLiteral() not %s. got=%s",
+			expectedVal, ident.TokenLiteral())
+		return false
+	}
+
+	return true
+}
+
+func testLiteralExpression(
+	t *testing.T,
+	expr ast.Expression,
+	expected interface{},
+) bool {
+	switch v := expected.(type) {
+	case int:
+		return testIntegerLiteral(t, expr, int64(v))
+	case int64:
+		return testIntegerLiteral(t, expr, v)
+	case string:
+		return testIdentifier(t, expr, v)
+	default:
+		t.Errorf("type of expr not handled. got=%T", expr)
+		return false
+	}
+}
+
+func testInfixExpression(
+	t *testing.T,
+	expr ast.Expression,
+	expectedLeft interface{},
+	expectedOp string,
+	expectedRight interface{},
+) bool {
+	inExpr, ok := expr.(*ast.InfixExpression)
+	if !ok {
+		t.Errorf("expr is not *ast.InfixExpression. got=%T(%s)", expr, expr)
+	}
+
+	if !testLiteralExpression(t, inExpr.Left, expectedLeft) {
+		return false
+	}
+
+	if inExpr.Operator != expectedOp {
+		t.Errorf("expr.Operator is not '%s'. got=%q", expectedOp, inExpr.Operator)
+		return false
+	}
+
+	if !testLiteralExpression(t, inExpr.Right, expectedRight) {
+		return false
+	}
+
+	return true
 }
