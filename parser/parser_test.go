@@ -37,25 +37,27 @@ func testNumProgramStatements(t *testing.T, program *ast.Program, expected int) 
 }
 
 func TestLetStatements(t *testing.T) {
-	input := `
-let x = 5;
-let y = 10;
-let foobar = 838383;	
-`
-	program := parseProgram(t, input)
-	testNumProgramStatements(t, program, 3)
-
 	tests := []struct {
+		input              string
 		expectedIdentifier string
+		expectedValue      interface{}
 	}{
-		{"x"},
-		{"y"},
-		{"foobar"},
+		{"let x = 5;", "x", 5},
+		{"let y = true;", "y", true},
+		{"let foobar = y;", "foobar", "y"},
 	}
 
-	for i, test := range tests {
-		stmt := program.Statements[i]
+	for _, test := range tests {
+		program := parseProgram(t, test.input)
+		testNumProgramStatements(t, program, 1)
+
+		stmt := program.Statements[0]
 		if !testLetStatement(t, stmt, test.expectedIdentifier) {
+			return
+		}
+
+		val := stmt.(*ast.LetStatement).Value
+		if !testLiteralExpression(t, val, test.expectedValue) {
 			return
 		}
 	}
@@ -104,9 +106,9 @@ func TestReturnStatements(t *testing.T) {
 			t.Errorf("returnStmt.TokenLiteral not 'return, got %q",
 				returnStmt.TokenLiteral())
 		}
-		// if testLiteralExpression(t, returnStmt.ReturnValue, test.expectedValue) {
-		// 	return
-		// }
+		if !testLiteralExpression(t, returnStmt.ReturnValue, test.expectedValue) {
+			return
+		}
 	}
 }
 
@@ -567,19 +569,19 @@ func testIdentifier(t *testing.T, expr ast.Expression, expectedVal string) bool 
 }
 
 func testIntegerLiteral(t *testing.T, expr ast.Expression, expectedVal int64) bool {
-	il, ok := expr.(*ast.IntegerLiteral)
+	lit, ok := expr.(*ast.IntegerLiteral)
 	if !ok {
 		t.Errorf("expr not *ast.IntegerLiteral. got=%T", expr)
 		return false
 	}
 
-	if il.Value != expectedVal {
-		t.Errorf("il.Value not %d. got=%d", expectedVal, il.Value)
+	if lit.Value != expectedVal {
+		t.Errorf("il.Value not %d. got=%d", expectedVal, lit.Value)
 	}
 
-	if il.TokenLiteral() != fmt.Sprintf("%d", expectedVal) {
+	if lit.TokenLiteral() != fmt.Sprintf("%d", expectedVal) {
 		t.Errorf("il.TokenLiteral() not %d. got=%s",
-			expectedVal, il.TokenLiteral())
+			expectedVal, lit.TokenLiteral())
 	}
 
 	return true
