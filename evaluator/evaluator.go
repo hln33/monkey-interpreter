@@ -6,6 +6,7 @@ import (
 )
 
 var (
+	NULL  = &object.NULL{}
 	TRUE  = &object.Boolean{Value: true}
 	FALSE = &object.Boolean{Value: false}
 )
