@@ -22,11 +22,14 @@ func nativeBoolToBoolObj(input bool) *object.Boolean {
 func Eval(node ast.Node) object.Object {
 	switch node := node.(type) {
 	case *ast.Program:
-		return evalStatements(node.Statements)
+		return evalProgram(node.Statements)
 	case *ast.ExpressionStatement:
 		return Eval(node.Expression)
 	case *ast.BlockStatement:
-		return evalStatements(node.Statements)
+		return evalBlockStatement(node)
+	case *ast.ReturnStatement:
+		val := Eval(node.ReturnValue)
+		return &object.ReturnValue{Value: val}
 	case *ast.IfExpression:
 		return evalIfExpression(node)
 	case *ast.PrefixExpression:
@@ -45,11 +48,29 @@ func Eval(node ast.Node) object.Object {
 	}
 }
 
-func evalStatements(stmts []ast.Statement) object.Object {
+func evalProgram(stmts []ast.Statement) object.Object {
 	var res object.Object
 
 	for _, stmt := range stmts {
 		res = Eval(stmt)
+
+		if rv, ok := res.(*object.ReturnValue); ok {
+			return rv.Value
+		}
+	}
+
+	return res
+}
+
+func evalBlockStatement(block *ast.BlockStatement) object.Object {
+	var res object.Object
+
+	for _, stmt := range block.Statements {
+		res = Eval(stmt)
+
+		if res != nil && res.Type() == object.RETURN_VALUE_OBJ {
+			return res
+		}
 	}
 
 	return res
@@ -88,7 +109,6 @@ func evalPrefixExpression(op string, right object.Object) object.Object {
 		return NULL
 	}
 }
-
 func evalBangOperatorExpression(right object.Object) object.Object {
 	switch right {
 	case TRUE:
@@ -101,7 +121,6 @@ func evalBangOperatorExpression(right object.Object) object.Object {
 		return FALSE
 	}
 }
-
 func evalMinusPrefixOperatorExpression(right object.Object) object.Object {
 	if right.Type() != object.INTEGER_OBJ {
 		return NULL
