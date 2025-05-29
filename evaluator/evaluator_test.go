@@ -141,6 +141,25 @@ func TestBooleanExpression(t *testing.T) {
 	}
 }
 
+func TestArrayLiterals(t *testing.T) {
+	input := "[1, 2 * 2, 3 + 3]"
+
+	eval := testEval(input)
+	res, ok := eval.(*object.Array)
+	if !ok {
+		t.Fatalf("object is not Array. got=%T (%+v)", eval, eval)
+	}
+
+	if len(res.Elements) != 3 {
+		t.Fatalf("array does not have 3 elements. got=%d",
+			len(res.Elements))
+	}
+
+	testIntegerObject(t, res.Elements[0], 1)
+	testIntegerObject(t, res.Elements[1], 4)
+	testIntegerObject(t, res.Elements[2], 6)
+}
+
 func TestBangOperator(t *testing.T) {
 	tests := []struct {
 		input    string
