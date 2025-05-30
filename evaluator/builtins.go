@@ -22,6 +22,7 @@ var builtins = map[string]*object.Builtin{
 			}
 		},
 	},
+	// Returns the first element of an array
 	"first": {
 		Fn: func(args ...object.Object) object.Object {
 			if len(args) != 1 {
@@ -41,6 +42,7 @@ var builtins = map[string]*object.Builtin{
 			}
 		},
 	},
+	// Returns the last element of an array
 	"last": {
 		Fn: func(args ...object.Object) object.Object {
 			if len(args) != 1 {
@@ -61,6 +63,7 @@ var builtins = map[string]*object.Builtin{
 			}
 		},
 	},
+	// Returns an array without its first element
 	"rest": {
 		Fn: func(args ...object.Object) object.Object {
 			if len(args) != 1 {
@@ -83,6 +86,7 @@ var builtins = map[string]*object.Builtin{
 			}
 		},
 	},
+	// Adds an element to the end of an array
 	"push": {
 		Fn: func(args ...object.Object) object.Object {
 			if len(args) != 2 {
