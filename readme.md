@@ -69,7 +69,7 @@ $ go test ./parser
 * Additional Language Features
   * Operators like <=, >=
   * For/While Loops
-  * Supporting being able to interpret source code files (Right now the only way to interact with the interpreter is through the REPL)
+* Supporting being able to interpret source code files (Right now the only way to interact with the interpreter is through the REPL)
 * Going through the follow-up book "Writing a Compiler in Go"
 
 ## See Also
