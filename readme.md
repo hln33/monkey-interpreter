@@ -70,7 +70,10 @@ $ go test ./parser
   * Operators like <=, >=
   * For/While Loops
 * Supporting being able to interpret source code files (Right now the only way to interact with the interpreter is through the REPL)
-* Going through the follow-up book "Writing a Compiler in Go"
+* Going through the follow-up book "Writing a Compiler in Go" (in progress)
 
 ## See Also
 Have a look at [Rlox](https://github.com/hln33/rlox/tree/main). A similar project I did, but following a different book called "Crafting Interpreters" and in the Rust programming language.
+
+## Bookmark
+Writing a compiler in Go - Back to the Task at Hand - page 44 
