@@ -55,16 +55,20 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 	switch node := node.(type) {
 	case *ast.Program:
 		return evalProgram(node.Statements, env)
+
 	case *ast.ExpressionStatement:
 		return Eval(node.Expression, env)
+
 	case *ast.BlockStatement:
 		return evalBlockStatement(node, env)
+
 	case *ast.ReturnStatement:
 		val := Eval(node.ReturnValue, env)
 		if isError(val) {
 			return val
 		}
 		return &object.ReturnValue{Value: val}
+
 	case *ast.LetStatement:
 		val := Eval(node.Value, env)
 		if isError(val) {
@@ -72,16 +76,20 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		}
 		env.Set(node.Name.Value, val)
 		return nil
+
 	case *ast.Identifier:
 		return evalIdentifier(node, env)
+
 	case *ast.IfExpression:
 		return evalIfExpression(node, env)
+
 	case *ast.FunctionLiteral:
 		return &object.Function{
 			Parameters: node.Parameters,
 			Env:        env,
 			Body:       node.Body,
 		}
+
 	case *ast.CallExpression:
 		fn := Eval(node.Function, env)
 		if isError(fn) {
@@ -92,24 +100,25 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 			return args[0]
 		}
 		return applyFunction(fn, args)
+
 	case *ast.PrefixExpression:
 		right := Eval(node.Right, env)
 		if isError(right) {
 			return right
 		}
 		return evalPrefixExpression(node.Operator, right)
+
 	case *ast.InfixExpression:
 		left := Eval(node.Left, env)
 		if isError(left) {
 			return left
 		}
-
 		right := Eval(node.Right, env)
 		if isError(right) {
 			return right
 		}
-
 		return evalInfixExpression(node.Operator, left, right)
+
 	case *ast.IndexExpression:
 		left := Eval(node.Left, env)
 		if isError(left) {
@@ -120,20 +129,26 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 			return idx
 		}
 		return evalIndexExpression(left, idx)
+
 	case *ast.IntegerLiteral:
 		return &object.Integer{Value: node.Value}
+
 	case *ast.StringLiteral:
 		return &object.String{Value: node.Value}
+
 	case *ast.Boolean:
 		return nativeBoolToBoolObj(node.Value)
+
 	case *ast.ArrayLiteral:
 		elements := evalExpressions(node.Elements, env)
 		if len(elements) == 1 && isError(elements[0]) {
 			return elements[0]
 		}
 		return &object.Array{Elements: elements}
+
 	case *ast.HashLiteral:
 		return evalHashLiteral(node, env)
+
 	default:
 		return nil
 	}

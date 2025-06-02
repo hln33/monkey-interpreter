@@ -8,28 +8,28 @@ import (
 
 type Instructions []byte
 
-func (ins Instructions) String() string {
+func (i Instructions) String() string {
 	var out bytes.Buffer
 
-	i := 0
-	for i < len(ins) {
-		def, err := Lookup(ins[i])
+	offset := 0
+	for offset < len(i) {
+		def, err := Lookup(i[offset])
 		if err != nil {
 			fmt.Fprintf(&out, "ERROR: %s\n", err)
 			continue
 		}
 
-		operands, read := ReadOperands(def, ins[i+1:])
+		operands, read := ReadOperands(def, i[offset+1:])
 
-		fmt.Fprintf(&out, "%04d %s\n", i, ins.fmtInstruction(def, operands))
+		fmt.Fprintf(&out, "%04d %s\n", offset, i.fmtInstruction(def, operands))
 
-		i += 1 + read
+		offset += 1 + read
 	}
 
 	return out.String()
 }
 
-func (ins Instructions) fmtInstruction(def *Definition, operands []int) string {
+func (i Instructions) fmtInstruction(def *Definition, operands []int) string {
 	operandCount := len(def.OperandWidths)
 
 	if len(operands) != operandCount {
