@@ -47,6 +47,13 @@ func (vm *VM) Run() error {
 			if err != nil {
 				return err
 			}
+		case code.OpAdd:
+			right := vm.pop()
+			left := vm.pop()
+
+			leftVal := left.(*object.Integer).Value
+			rightVal := right.(*object.Integer).Value
+			vm.push(&object.Integer{Value: leftVal + rightVal})
 		}
 	}
 
@@ -63,4 +70,11 @@ func (vm *VM) push(o object.Object) error {
 	vm.stackPtr++
 
 	return nil
+}
+
+// pops an object off the stack and decrements the stack pointer
+func (vm *VM) pop() object.Object {
+	o := vm.stack[vm.stackPtr-1]
+	vm.stackPtr--
+	return o
 }
