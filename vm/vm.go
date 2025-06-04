@@ -9,6 +9,9 @@ import (
 
 const STACK_SIZE = 2048
 
+var True = &object.Boolean{Value: true}
+var False = &object.Boolean{Value: false}
+
 type VM struct {
 	constants    []object.Object
 	instructions code.Instructions
@@ -39,34 +42,6 @@ func (vm *VM) StackTop() object.Object {
 	return vm.stack[vm.stackPtr-1]
 }
 
-func (vm *VM) Run() error {
-	for ptr := 0; ptr < len(vm.instructions); ptr++ {
-		op := code.Opcode(vm.instructions[ptr])
-
-		switch op {
-		case code.OpConstant:
-			constIdx := code.ReadUint16(vm.instructions[ptr+1:])
-			ptr += 2
-
-			err := vm.push(vm.constants[constIdx])
-			if err != nil {
-				return err
-			}
-
-		case code.OpAdd, code.OpSub, code.OpMul, code.OpDiv:
-			err := vm.executeBinaryOperation(op)
-			if err != nil {
-				return err
-			}
-
-		case code.OpPop:
-			vm.pop()
-		}
-	}
-
-	return nil
-}
-
 // pushes an object onto the stack and increments the stack pointer
 func (vm *VM) push(o object.Object) error {
 	if vm.stackPtr >= STACK_SIZE {
@@ -84,6 +59,46 @@ func (vm *VM) pop() object.Object {
 	o := vm.stack[vm.stackPtr-1]
 	vm.stackPtr--
 	return o
+}
+
+func (vm *VM) Run() error {
+	for ptr := 0; ptr < len(vm.instructions); ptr++ {
+		op := code.Opcode(vm.instructions[ptr])
+
+		switch op {
+		case code.OpConstant:
+			constIdx := code.ReadUint16(vm.instructions[ptr+1:])
+			ptr += 2
+
+			err := vm.push(vm.constants[constIdx])
+			if err != nil {
+				return err
+			}
+
+		case code.OpTrue:
+			err := vm.push(True)
+			if err != nil {
+				return err
+			}
+
+		case code.OpFalse:
+			err := vm.push(False)
+			if err != nil {
+				return err
+			}
+
+		case code.OpAdd, code.OpSub, code.OpMul, code.OpDiv:
+			err := vm.executeBinaryOperation(op)
+			if err != nil {
+				return err
+			}
+
+		case code.OpPop:
+			vm.pop()
+		}
+	}
+
+	return nil
 }
 
 func (vm *VM) executeBinaryOperation(op code.Opcode) error {
