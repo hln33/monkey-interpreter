@@ -100,16 +100,17 @@ func Make(op Opcode, operands ...int) []byte {
 // Returns decoded operands from a bytecode instruction and how many bytes it read
 func ReadOperands(def *Definition, ins Instructions) (operands []int, bytesRead int) {
 	operands = make([]int, len(def.OperandWidths))
-	bytesRead = 0
+	offset := 0
 
 	for i, width := range def.OperandWidths {
 		switch width {
 		case 2:
-			operands[i] = int(ReadUint16(ins[bytesRead:]))
+			operands[i] = int(ReadUint16(ins[offset:]))
 		}
-		bytesRead += width
+		offset += width
 	}
 
+	bytesRead = offset
 	return operands, bytesRead
 }
 
