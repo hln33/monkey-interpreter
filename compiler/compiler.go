@@ -36,6 +36,21 @@ func (c *Compiler) Compile(node ast.Node) error {
 		}
 		c.emit(code.OpPop)
 
+	case *ast.PrefixExpression:
+		err := c.Compile(node.Right)
+		if err != nil {
+			return err
+		}
+
+		switch node.Operator {
+		case "!":
+			c.emit(code.OpBang)
+		case "-":
+			c.emit(code.OpMinus)
+		default:
+			return fmt.Errorf("unknown prefix operator %s", node.Operator)
+		}
+
 	case *ast.InfixExpression:
 		// Reorder operands for for "<" so that we don't need a separate opcode for it.
 		if node.Operator == "<" {
@@ -79,12 +94,13 @@ func (c *Compiler) Compile(node ast.Node) error {
 		case "!=":
 			c.emit(code.OpNotEqual)
 		default:
-			return fmt.Errorf("unknown operator %s", node.Operator)
+			return fmt.Errorf("unknown infix operator %s", node.Operator)
 		}
 
 	case *ast.IntegerLiteral:
 		integer := &object.Integer{Value: node.Value}
-		c.emit(code.OpConstant, c.addConstant(integer))
+		constIdx := c.addConstant(integer)
+		c.emit(code.OpConstant, constIdx)
 
 	case *ast.Boolean:
 		if node.Value {
