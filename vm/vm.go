@@ -20,6 +20,15 @@ func nativeBoolToBoolObj(input bool) *object.Boolean {
 	}
 }
 
+func isTruthy(obj object.Object) bool {
+	switch obj := obj.(type) {
+	case *object.Boolean:
+		return obj.Value
+	default:
+		return true
+	}
+}
+
 type VM struct {
 	constants    []object.Object
 	instructions code.Instructions
@@ -117,6 +126,19 @@ func (vm *VM) Run() error {
 			err := vm.executeComparison(op)
 			if err != nil {
 				return err
+			}
+
+		case code.OpJump:
+			jumpPos := int(code.ReadUint16(vm.instructions[ptr+1:]))
+			ptr = jumpPos - 1
+
+		case code.OpJumpNotTruthy:
+			jumpPos := int(code.ReadUint16(vm.instructions[ptr+1:]))
+			ptr += 2
+
+			condition := vm.pop()
+			if !isTruthy(condition) {
+				ptr = jumpPos - 1
 			}
 
 		case code.OpPop:
