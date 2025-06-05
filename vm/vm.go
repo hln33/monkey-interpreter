@@ -11,6 +11,7 @@ const STACK_SIZE = 2048
 
 var True = &object.Boolean{Value: true}
 var False = &object.Boolean{Value: false}
+var Null = &object.NULL{}
 
 func nativeBoolToBoolObj(input bool) *object.Boolean {
 	if input {
@@ -24,6 +25,8 @@ func isTruthy(obj object.Object) bool {
 	switch obj := obj.(type) {
 	case *object.Boolean:
 		return obj.Value
+	case *object.NULL:
+		return false
 	default:
 		return true
 	}
@@ -104,6 +107,12 @@ func (vm *VM) Run() error {
 				return err
 			}
 
+		case code.OpNull:
+			err := vm.push(Null)
+			if err != nil {
+				return err
+			}
+
 		case code.OpMinus:
 			err := vm.executeMinusOperator()
 			if err != nil {
@@ -167,6 +176,8 @@ func (vm *VM) executeBangOperator() error {
 	case True:
 		return vm.push(False)
 	case False:
+		return vm.push(True)
+	case Null:
 		return vm.push(True)
 	default:
 		return vm.push(False)
