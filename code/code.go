@@ -65,6 +65,7 @@ const (
 	OpNull
 	OpGetGlobal
 	OpSetGlobal
+	OpArray
 )
 
 type Definition struct {
@@ -73,7 +74,7 @@ type Definition struct {
 }
 
 var definitions = map[Opcode]*Definition{
-	OpConstant:      {"OpConstant", []int{2}},
+	OpConstant:      {"OpConstant", []int{2}}, // operand: index of constant
 	OpAdd:           {"OpAdd", []int{}},
 	OpPop:           {"OpPop", []int{}},
 	OpSub:           {"OpSub", []int{}},
@@ -86,11 +87,12 @@ var definitions = map[Opcode]*Definition{
 	OpGreaterThan:   {"OpGreaterThan", []int{}},
 	OpMinus:         {"OpMinus", []int{}},
 	OpBang:          {"OpBang", []int{}},
-	OpJumpNotTruthy: {"OpJumpNotTruthy", []int{2}},
-	OpJump:          {"OpJump", []int{2}},
+	OpJumpNotTruthy: {"OpJumpNotTruthy", []int{2}}, // operand: position to jump to
+	OpJump:          {"OpJump", []int{2}},          // operand: position to jump to
 	OpNull:          {"OpNull", []int{}},
-	OpGetGlobal:     {"OpGetGlobal", []int{2}},
-	OpSetGlobal:     {"OpSetGlobal", []int{2}},
+	OpGetGlobal:     {"OpGetGlobal", []int{2}}, // operand: index of global
+	OpSetGlobal:     {"OpSetGlobal", []int{2}}, // operand: index of global
+	OpArray:         {"OpArray", []int{2}},     // operand: number of elements in array
 }
 
 func Lookup(op byte) (*Definition, error) {

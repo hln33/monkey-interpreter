@@ -37,9 +37,9 @@ type VM struct {
 	constants    []object.Object
 	instructions code.Instructions
 
-	stack    []object.Object
-	stackPtr int // Always points to the next free value. Top of stack is stack[stackPtr-1]
-	globals  []object.Object
+	stack   []object.Object
+	sp      int // Always points to the next free value. Top of stack is stack[stackPtr-1]
+	globals []object.Object
 }
 
 func New(bytecode *compiler.Bytecode) *VM {
@@ -47,9 +47,9 @@ func New(bytecode *compiler.Bytecode) *VM {
 		instructions: bytecode.Instructions,
 		constants:    bytecode.Constants,
 
-		stack:    make([]object.Object, STACK_SIZE),
-		stackPtr: 0,
-		globals:  make([]object.Object, GLOBALS_SIZE),
+		stack:   make([]object.Object, STACK_SIZE),
+		sp:      0,
+		globals: make([]object.Object, GLOBALS_SIZE),
 	}
 }
 
@@ -61,32 +61,32 @@ func NewWithGlobalsStore(bytecode *compiler.Bytecode, globals []object.Object) *
 
 // FOR TESTS ONLY
 func (vm *VM) LastPoppedStackElem() object.Object {
-	return vm.stack[vm.stackPtr]
+	return vm.stack[vm.sp]
 }
 
 func (vm *VM) StackTop() object.Object {
-	if vm.stackPtr == 0 {
+	if vm.sp == 0 {
 		return nil
 	}
-	return vm.stack[vm.stackPtr-1]
+	return vm.stack[vm.sp-1]
 }
 
 // pushes an object onto the stack and increments the stack pointer
 func (vm *VM) push(o object.Object) error {
-	if vm.stackPtr >= STACK_SIZE {
+	if vm.sp >= STACK_SIZE {
 		return fmt.Errorf("stack overflow")
 	}
 
-	vm.stack[vm.stackPtr] = o
-	vm.stackPtr++
+	vm.stack[vm.sp] = o
+	vm.sp++
 
 	return nil
 }
 
 // pops an object off the stack and decrements the stack pointer
 func (vm *VM) pop() object.Object {
-	o := vm.stack[vm.stackPtr-1]
-	vm.stackPtr--
+	o := vm.stack[vm.sp-1]
+	vm.sp--
 	return o
 }
 
@@ -170,6 +170,18 @@ func (vm *VM) Run() error {
 			ip += 2
 
 			err := vm.push(vm.globals[globalIdx])
+			if err != nil {
+				return err
+			}
+
+		case code.OpArray:
+			numElems := int(code.ReadUint16(vm.instructions[ip+1:]))
+			ip += 2
+
+			arr := vm.buildArray(vm.sp-numElems, vm.sp)
+			vm.sp = vm.sp - numElems
+
+			err := vm.push(arr)
 			if err != nil {
 				return err
 			}
@@ -283,6 +295,7 @@ func (vm *VM) executeComparison(op code.Opcode) error {
 			op, left.Type(), right.Type())
 	}
 }
+
 func (vm *VM) executeIntegerComparison(
 	op code.Opcode,
 	left, right object.Object,
@@ -300,4 +313,14 @@ func (vm *VM) executeIntegerComparison(
 	default:
 		return fmt.Errorf("unknown operator: %d", op)
 	}
+}
+
+func (vm *VM) buildArray(startIdx, endIdx int) object.Object {
+	elems := make([]object.Object, endIdx-startIdx)
+
+	for i := startIdx; i < endIdx; i++ {
+		elems[i-startIdx] = vm.stack[i]
+	}
+
+	return &object.Array{Elements: elems}
 }

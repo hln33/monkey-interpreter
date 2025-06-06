@@ -192,6 +192,15 @@ func (c *Compiler) Compile(node ast.Node) error {
 		}
 		c.emit(code.OpGetGlobal, symbol.Index)
 
+	case *ast.ArrayLiteral:
+		for _, el := range node.Elements {
+			err := c.Compile(el)
+			if err != nil {
+				return err
+			}
+		}
+		c.emit(code.OpArray, len(node.Elements))
+
 	case *ast.IntegerLiteral:
 		integer := &object.Integer{Value: node.Value}
 		constIdx := c.addConstant(integer)
