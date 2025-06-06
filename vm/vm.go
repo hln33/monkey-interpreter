@@ -8,6 +8,7 @@ import (
 )
 
 const STACK_SIZE = 2048
+const GLOBALS_SIZE = 65536
 
 var True = &object.Boolean{Value: true}
 var False = &object.Boolean{Value: false}
@@ -38,6 +39,7 @@ type VM struct {
 
 	stack    []object.Object
 	stackPtr int // Always points to the next free value. Top of stack is stack[stackPtr-1]
+	globals  []object.Object
 }
 
 func New(bytecode *compiler.Bytecode) *VM {
@@ -47,7 +49,14 @@ func New(bytecode *compiler.Bytecode) *VM {
 
 		stack:    make([]object.Object, STACK_SIZE),
 		stackPtr: 0,
+		globals:  make([]object.Object, GLOBALS_SIZE),
 	}
+}
+
+func NewWithGlobalsStore(bytecode *compiler.Bytecode, globals []object.Object) *VM {
+	vm := New(bytecode)
+	vm.globals = globals
+	return vm
 }
 
 // FOR TESTS ONLY
@@ -82,13 +91,13 @@ func (vm *VM) pop() object.Object {
 }
 
 func (vm *VM) Run() error {
-	for ptr := 0; ptr < len(vm.instructions); ptr++ {
-		op := code.Opcode(vm.instructions[ptr])
+	for ip := 0; ip < len(vm.instructions); ip++ {
+		op := code.Opcode(vm.instructions[ip])
 
 		switch op {
 		case code.OpConstant:
-			constIdx := code.ReadUint16(vm.instructions[ptr+1:])
-			ptr += 2
+			constIdx := code.ReadUint16(vm.instructions[ip+1:])
+			ip += 2
 
 			err := vm.push(vm.constants[constIdx])
 			if err != nil {
@@ -138,16 +147,31 @@ func (vm *VM) Run() error {
 			}
 
 		case code.OpJump:
-			jumpPos := int(code.ReadUint16(vm.instructions[ptr+1:]))
-			ptr = jumpPos - 1
+			jumpPos := int(code.ReadUint16(vm.instructions[ip+1:]))
+			ip = jumpPos - 1
 
 		case code.OpJumpNotTruthy:
-			jumpPos := int(code.ReadUint16(vm.instructions[ptr+1:]))
-			ptr += 2
+			jumpPos := int(code.ReadUint16(vm.instructions[ip+1:]))
+			ip += 2
 
 			condition := vm.pop()
 			if !isTruthy(condition) {
-				ptr = jumpPos - 1
+				ip = jumpPos - 1
+			}
+
+		case code.OpSetGlobal:
+			globalIdx := code.ReadUint16(vm.instructions[ip+1:])
+			ip += 2
+
+			vm.globals[globalIdx] = vm.pop()
+
+		case code.OpGetGlobal:
+			globalIdx := code.ReadUint16(vm.instructions[ip+1:])
+			ip += 2
+
+			err := vm.push(vm.globals[globalIdx])
+			if err != nil {
+				return err
 			}
 
 		case code.OpPop:
