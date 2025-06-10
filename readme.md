@@ -76,4 +76,4 @@ $ go test ./parser
 Have a look at [Rlox](https://github.com/hln33/rlox/tree/main). A similar project I did, but following a different book called "Crafting Interpreters" and in the Rust programming language.
 
 ## Bookmark
-Writing a compiler in Go - Functions in the VM - page 166
+Writing a compiler in Go - It's Not Nothing, It's Null - page 174
