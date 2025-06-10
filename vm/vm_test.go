@@ -110,7 +110,6 @@ func testExpectedObject(
 				t.Errorf("testIntegerObject failed: %s", err)
 			}
 		}
-
 	case *object.NULL:
 		if actual != Null {
 			t.Errorf("object is not Null: %T (%+v)", actual, actual)
@@ -351,6 +350,29 @@ func TestFunctionsWithReturnStatement(t *testing.T) {
 		earlyExit();
 		`,
 			expected: 99,
+		},
+	}
+
+	runVmTests(t, tests)
+}
+
+func TestFunctionsWithoutReturnValue(t *testing.T) {
+	tests := []vmTestCase{
+		{
+			input: `
+		let noReturn = fn() { };
+		noReturn();
+		`,
+			expected: Null,
+		},
+		{
+			input: `
+		let noReturn = fn() { };
+		let noReturnTwo = fn() { noReturn(); };
+		noReturn();
+		noReturnTwo();
+		`,
+			expected: Null,
 		},
 	}
 
