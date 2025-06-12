@@ -184,6 +184,7 @@ func (e *Error) Inspect() string  { return "Error: " + e.Message }
 
 type CompiledFunction struct {
 	Instructions code.Instructions
+	NumLocals    int // How many local bindings the function will create.
 }
 
 func (cf *CompiledFunction) Type() ObjectType { return COMPILED_FUNCTION_OBJ }
