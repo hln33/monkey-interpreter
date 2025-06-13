@@ -102,7 +102,7 @@ var definitions = map[Opcode]*Definition{
 	OpArray:         {"OpArray", []int{2}},     // operand: number of elements in array
 	OpHash:          {"OpHash", []int{2}},      // operand: number of key AND values on the stack
 	OpIndex:         {"OpIndex", []int{}},
-	OpCall:          {"OpCall", []int{}},
+	OpCall:          {"OpCall", []int{1}}, // operand: number of arguments
 	OpReturnValue:   {"OpReturnValue", []int{}},
 	OpReturn:        {"OpReturn", []int{}},
 	OpGetLocal:      {"OpGetLocal", []int{1}},
