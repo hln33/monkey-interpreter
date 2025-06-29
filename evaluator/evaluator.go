@@ -95,10 +95,12 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		if isError(fn) {
 			return fn
 		}
+
 		args := evalExpressions(node.Arguments, env)
 		if len(args) == 1 && isError(args[0]) {
 			return args[0]
 		}
+
 		return applyFunction(fn, args)
 
 	case *ast.PrefixExpression:
@@ -161,7 +163,10 @@ func applyFunction(fn object.Object, args []object.Object) object.Object {
 		eval := Eval(fn.Body, extendedEnv)
 		return unwrapReturnValue(eval)
 	case *object.Builtin:
-		return fn.Fn(args...)
+		if res := fn.Fn(args...); res != nil {
+			return res
+		}
+		return NULL
 	default:
 		return newError("not a function: %s", fn.Type())
 	}

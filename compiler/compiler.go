@@ -40,9 +40,14 @@ func New() *Compiler {
 		previousInstruction: EmittedInstruction{},
 	}
 
+	SymbolTable := NewSymbolTable()
+	for i, b := range object.Builtins {
+		SymbolTable.DefineBuiltin(i, b.Name)
+	}
+
 	return &Compiler{
 		constants:   []object.Object{},
-		symbolTable: NewSymbolTable(),
+		symbolTable: SymbolTable,
 		scopes:      []CompilationScope{mainScope},
 		scopeIndex:  0,
 	}
@@ -64,6 +69,21 @@ func (c *Compiler) Bytecode() *Bytecode {
 
 func (c *Compiler) currentInstructions() code.Instructions {
 	return c.scopes[c.scopeIndex].instructions
+}
+
+func (c *Compiler) loadSymbol(s Symbol) error {
+	switch s.Scope {
+	case GlobalScope:
+		c.emit(code.OpGetGlobal, s.Index)
+	case LocalScope:
+		c.emit(code.OpGetLocal, s.Index)
+	case BuiltinScope:
+		c.emit(code.OpGetBuiltin, s.Index)
+	default:
+		return fmt.Errorf("unknown symbol scope: %s", s.Scope)
+	}
+
+	return nil
 }
 
 func (c *Compiler) enterScope() {
@@ -242,10 +262,9 @@ func (c *Compiler) Compile(node ast.Node) error {
 			return fmt.Errorf("undefined variable %s", node.Value)
 		}
 
-		if symbol.Scope == GlobalScope {
-			c.emit(code.OpGetGlobal, symbol.Index)
-		} else {
-			c.emit(code.OpGetLocal, symbol.Index)
+		err := c.loadSymbol(symbol)
+		if err != nil {
+			return err
 		}
 
 	case *ast.CallExpression:
