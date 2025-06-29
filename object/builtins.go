@@ -108,7 +108,7 @@ var Builtins = []struct {
 		},
 		},
 	},
-	// Adds an element to the end of an array
+	// Creates a new array by adding an element to the end of an existing array
 	{
 		"push",
 		&Builtin{Fn: func(args ...Object) Object {
