@@ -356,7 +356,9 @@ func (c *Compiler) Compile(node ast.Node) error {
 			NumParameters: len(node.Parameters),
 			NumLocals:     numLocals,
 		}
-		c.emit(code.OpConstant, c.addConstant(compiledFn))
+
+		fnIdx := c.addConstant(compiledFn)
+		c.emit(code.OpClosure, fnIdx, 0)
 
 	case *ast.IntegerLiteral:
 		integer := &object.Integer{Value: node.Value}

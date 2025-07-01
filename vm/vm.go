@@ -48,7 +48,8 @@ type VM struct {
 
 func New(bytecode *compiler.Bytecode) *VM {
 	mainFn := &object.CompiledFunction{Instructions: bytecode.Instructions}
-	mainFrame := NewFrame(mainFn, 0)
+	mainClosure := &object.Closure{Fn: mainFn}
+	mainFrame := NewFrame(mainClosure, 0)
 
 	frames := make([]*Frame, MAX_FRAMES)
 	frames[0] = mainFrame
@@ -115,6 +116,17 @@ func (vm *VM) pushFrame(f *Frame) {
 func (vm *VM) popFrame() *Frame {
 	vm.framesIndex--
 	return vm.frames[vm.framesIndex]
+}
+
+func (vm *VM) pushClosure(constIdx int) error {
+	constant := vm.constants[constIdx]
+	fn, ok := constant.(*object.CompiledFunction)
+	if !ok {
+		return fmt.Errorf("not a function: %+v", constant)
+	}
+
+	closure := &object.Closure{Fn: fn}
+	return vm.push(closure)
 }
 
 func (vm *VM) Run() error {
@@ -294,12 +306,22 @@ func (vm *VM) Run() error {
 			}
 
 		case code.OpGetBuiltin:
-			builtinIndex := code.ReadUint8(ins[ip+1:])
+			builtinIdx := code.ReadUint8(ins[ip+1:])
 			vm.currentFrame().ip += 1
 
-			def := object.Builtins[builtinIndex]
+			def := object.Builtins[builtinIdx]
 
 			err := vm.push(def.Builtin)
+			if err != nil {
+				return err
+			}
+
+		case code.OpClosure:
+			constIdx := code.ReadUint16(ins[ip+1:])
+			_ = code.ReadUint8(ins[ip+3:])
+			vm.currentFrame().ip += 3
+
+			err := vm.pushClosure(int(constIdx))
 			if err != nil {
 				return err
 			}
@@ -505,8 +527,8 @@ func (vm *VM) buildHash(startIdx, endIdx int) (object.Object, error) {
 func (vm *VM) executeCall(numArgs int) error {
 	callee := vm.stack[vm.sp-1-numArgs]
 	switch callee := callee.(type) {
-	case *object.CompiledFunction:
-		return vm.callFunction(callee, numArgs)
+	case *object.Closure:
+		return vm.callClosure(callee, numArgs)
 	case *object.Builtin:
 		return vm.callBuiltin(callee, numArgs)
 	default:
@@ -514,16 +536,16 @@ func (vm *VM) executeCall(numArgs int) error {
 	}
 }
 
-func (vm *VM) callFunction(fn *object.CompiledFunction, numArgs int) error {
-	if numArgs != fn.NumParameters {
+func (vm *VM) callClosure(cl *object.Closure, numArgs int) error {
+	if numArgs != cl.Fn.NumParameters {
 		return fmt.Errorf("wrong number of arguments: want=%d, got=%d",
-			fn.NumParameters, numArgs)
+			cl.Fn.NumParameters, numArgs)
 	}
 
-	frame := NewFrame(fn, vm.sp-numArgs)
+	frame := NewFrame(cl, vm.sp-numArgs)
 	vm.pushFrame(frame)
 
-	vm.sp = frame.basePointer + fn.NumLocals
+	vm.sp = frame.basePointer + cl.Fn.NumLocals
 
 	return nil
 }
