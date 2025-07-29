@@ -186,3 +186,118 @@ func TestDefineResolveBuiltins(t *testing.T) {
 		}
 	}
 }
+
+func TestResolveFree(t *testing.T) {
+	global := NewSymbolTable()
+	global.Define("a")
+	global.Define("b")
+
+	firstLocal := NewEnclosedSymbolTable(global)
+	firstLocal.Define("c")
+	firstLocal.Define("d")
+
+	secondLocal := NewEnclosedSymbolTable(firstLocal)
+	secondLocal.Define("e")
+	secondLocal.Define("f")
+
+	tests := []struct {
+		table               *SymbolTable
+		expectedSymbols     []Symbol
+		expectedFreeSymbols []Symbol
+	}{
+		{
+			firstLocal,
+			[]Symbol{
+				Symbol{Name: "a", Scope: GlobalScope, Index: 0},
+				Symbol{Name: "b", Scope: GlobalScope, Index: 1},
+				Symbol{Name: "c", Scope: LocalScope, Index: 0},
+				Symbol{Name: "d", Scope: LocalScope, Index: 1},
+			},
+			[]Symbol{},
+		},
+		{
+			secondLocal,
+			[]Symbol{
+				Symbol{Name: "a", Scope: GlobalScope, Index: 0},
+				Symbol{Name: "b", Scope: GlobalScope, Index: 1},
+				Symbol{Name: "c", Scope: FreeScope, Index: 0},
+				Symbol{Name: "d", Scope: FreeScope, Index: 1},
+				Symbol{Name: "e", Scope: LocalScope, Index: 0},
+				Symbol{Name: "f", Scope: LocalScope, Index: 1},
+			},
+			[]Symbol{
+				Symbol{Name: "c", Scope: LocalScope, Index: 0},
+				Symbol{Name: "d", Scope: LocalScope, Index: 1},
+			},
+		},
+	}
+
+	for _, test := range tests {
+		for _, sym := range test.expectedSymbols {
+			res, ok := test.table.Resolve(sym.Name)
+			if !ok {
+				t.Errorf("name %s not resolvable", sym.Name)
+				continue
+			}
+			if res != sym {
+				t.Errorf("expected %s to resolve to %+v, got=%+v",
+					sym.Name, sym, res)
+			}
+		}
+
+		if len(test.table.FreeSymbols) != len(test.expectedFreeSymbols) {
+			t.Errorf("wrong number of free symbols. got=%d, want=%d",
+				len(test.table.FreeSymbols), len(test.expectedFreeSymbols))
+			continue
+		}
+
+		for i, sym := range test.expectedFreeSymbols {
+			result := test.table.FreeSymbols[i]
+			if result != sym {
+				t.Errorf("wrong free symbol. got=%+v, want=%+v",
+					result, sym)
+			}
+		}
+	}
+}
+
+func TestResolveUnresolvableFree(t *testing.T) {
+	global := NewSymbolTable()
+	global.Define("a")
+
+	firstLocal := NewEnclosedSymbolTable(global)
+	firstLocal.Define("c")
+
+	secondLocal := NewEnclosedSymbolTable(firstLocal)
+	secondLocal.Define("e")
+	secondLocal.Define("f")
+
+	expected := []Symbol{
+		Symbol{Name: "a", Scope: GlobalScope, Index: 0},
+		Symbol{Name: "c", Scope: FreeScope, Index: 0},
+		Symbol{Name: "e", Scope: LocalScope, Index: 0},
+		Symbol{Name: "f", Scope: LocalScope, Index: 1},
+	}
+	for _, sym := range expected {
+		res, ok := secondLocal.Resolve(sym.Name)
+		if !ok {
+			t.Errorf("name %s not resolvable", sym.Name)
+			continue
+		}
+		if res != sym {
+			t.Errorf("expected %s to resolve to %+v, got=%+v",
+				sym.Name, sym, res)
+		}
+	}
+
+	expectedUnresolvable := []string{
+		"b",
+		"d",
+	}
+	for _, name := range expectedUnresolvable {
+		_, ok := secondLocal.Resolve(name)
+		if ok {
+			t.Errorf("name %s resolved, but was expected not to", name)
+		}
+	}
+}

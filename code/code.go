@@ -77,6 +77,7 @@ const (
 	OpSetLocal
 	OpGetBuiltin
 	OpClosure
+	OpGetFree
 )
 
 type Definition struct {
@@ -113,6 +114,7 @@ var definitions = map[Opcode]*Definition{
 	OpSetLocal:      {"OpSetLocal", []int{1}},
 	OpGetBuiltin:    {"OpGetBuiltin", []int{1}},
 	OpClosure:       {"OpClosure", []int{2, 1}}, // operands: index of underlying function in the constant pool & how many free variables are needed
+	OpGetFree:       {"OpGetFree", []int{1}},
 }
 
 func Lookup(op byte) (*Definition, error) {
